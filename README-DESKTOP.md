@@ -1,0 +1,184 @@
+<div align="center">
+  <img src="docs/images/app-icon.png" width="112" alt="HOK BetaStudio icon">
+  <h1>HOK BetaStudio</h1>
+  <p>A desktop workspace for Honor of Kings assets.</p>
+  <p>
+    <img alt="Version 1.4" src="https://img.shields.io/badge/version-1.4-147d72?style=flat-square">
+    <img alt="Windows x64" src="https://img.shields.io/badge/platform-Windows_x64-357b9b?style=flat-square">
+    <img alt="C# and React" src="https://img.shields.io/badge/C%23_%2B_React-desktop-667672?style=flat-square">
+    <img alt="Three interface languages" src="https://img.shields.io/badge/UI-EN_%C2%B7_%E4%B8%AD%E6%96%87_%C2%B7_VI-147d72?style=flat-square">
+    <img alt="Experimental rebuilding" src="https://img.shields.io/badge/DB_rebuilding-Beta-b68a42?style=flat-square">
+  </p>
+</div>
+
+<!-- README-I18N:START -->
+
+**English** | [简体中文](./README.zh.md) | [Tiếng Việt](./README.vi.md)
+
+<!-- README-I18N:END -->
+
+Version **1.4** adds on-demand previews, memory-aware DB workers and reference-aware Mesh/animation FBX export. See the [release notes](docs/releases/1.4/RELEASE-NOTES.md). Binary links below become available when the 1.4 Release attachments are published; source updates do not publish binaries automatically.
+
+**[Download installer 1.4](https://github.com/Alanshown/HOK-BetaStudio/releases/download/1.4/HOK-BetaStudio-1.4-win-x64-setup.exe) · [Download portable ZIP 1.4](https://github.com/Alanshown/HOK-BetaStudio/releases/download/1.4/HOK-BetaStudio-1.4-win-x64-portable.zip)**
+
+Windows x64 · Source version 1.4 · [Installation & checksums](docs/INSTALL.md) · [MIT license](LICENSE)
+
+Browse DB packages by hero and skin, inspect Unity and non-Unity entries, preview models and audio, and export selected assets in batches. A C# backend keeps parsing, previews and exports outside the interface process.
+
+**[Screenshots](#export) · [Releases](https://github.com/Alanshown/HOK-BetaStudio/releases) · [Issues](https://github.com/Alanshown/HOK-BetaStudio/issues)**
+
+![Hero catalog in the desktop application](docs/images/01-catalog.png)
+
+## Contents
+
+- [Workspace and discovery](#workspace)
+- [Previews and export](#export)
+- [Replacement and rebuilding — Beta](#beta)
+- [Project structure](#structure)
+- [Build and package](#build)
+- [Download and use](#download)
+- [Verification](#verification)
+- [Attribution and distribution](#attribution)
+
+<a id="workspace"></a>
+## Workspace and discovery
+
+- **Browse before importing.** The local catalog shows heroes and skins on startup. Hero and skin cards use a diagonal domino entrance, with reduced-motion accessibility support.
+- **Resource synchronization (1.3).** Portraits load from indexed HTTPS URLs. Startup reads the applied local index and silently fetches and validates the official catalogs. Only a validated difference reveals the animated **Resource sync** button. Applying it clears imported DB caches and staged replacements, returns to the hero catalog, and refreshes portraits with the diagonal domino transition. Original DBs and completed exports remain untouched; network failure retains the applied index.
+- **Open files, open a folder, or drag them in.** Ordinary subdirectories are scanned recursively without a hard-coded depth limit. Junctions and symbolic links are skipped to avoid loops; inaccessible paths are reported.
+- **Match by filename.** `3200010504.db` → skin `10504` → hero `105`. Numeric shard suffixes such as `_0` are handled separately. Recognized extensionless DBs are accepted after signature checking.
+- **Default skins.** IDs ending in `00`, such as `10500`, use the hero portrait and the label “Default skin”. Unknown hero and skin IDs remain visible with stable placeholders.
+- **Inspect the imported scope.** Only matching heroes and skins are shown after import, with their source DB filenames. Search by name or ID, filter asset types, page through results and batch-select assets.
+- **Replace the workspace.** A new import discards the previous imported cache and pending replacements. The animated broom clears it and returns to the initial catalog; original files are not deleted.
+- **Three interface languages:** English, Simplified Chinese and Vietnamese. Original asset names and catalog names are preserved.
+
+![Two skin packages associated with hero 105](docs/images/02-skins.png)
+
+<a id="export"></a>
+## Previews and export
+
+| Module | Preview / output |
+|---|---|
+| Textures and sprites | Image preview, channel toggles and zoom; PNG, TGA, BMP, JPG, raw data |
+| Meshes | Interactive 3D orbit/zoom and wireframe; OBJ, FBX, JSON, raw data. FBX includes available referenced bones, morphs and animations; an unlinked mesh remains static |
+| GameObject / Animator | FBX export when native helpers and references are available |
+| AnimationClip | Reference-linked scene playback; FBX with a resolved model/rig, Unity YAML `.anim`, curve JSON and raw data. Missing dependencies are reported |
+| AudioClip / Wwise audio | Local playback; original media, WAV and MP3 where decoding is supported |
+| WwiseBank | Embedded-media tree and player; original BNK, ZIP of original WEM files, ZIP of converted MP3 files |
+| Cubemap, font, text, shader and video | Six-face Cubemap preview/PNG ZIP; on-demand font preview; type-appropriate original, text and JSON export |
+| Other package entries | Non-Unity entries are listed too; unknown or undecoded content can be retained as raw data |
+
+Preview dialogs blur the workspace and include previous/next navigation within the same asset category. BNK navigation stays inside the selected bank. User interaction interrupts model auto-rotation.
+
+`WwiseAudio` and `WwiseBank` identify media/container types, **not guaranteed “chat” versus “skill” categories**. A bank can contain embedded media, references to external media, or both. Only media actually present can be extracted. WEM export preserves original WEM bytes; arbitrary audio-to-WEM encoding is not implemented.
+
+Previews load only after selection. Closing releases image buffers, model GPU resources, audio sources and temporary fonts; opening a bank does not decode every sound. Small workspaces use separate workers; large workspaces reuse the indexed worker to avoid duplicate DB memory. Batch export records per-item results, warnings and collision-safe paths. Unsupported codecs and unresolved references are reported, not fabricated.
+
+![Filtered asset workspace](docs/images/03-assets.png)
+![Model preview](docs/images/05-model.png)
+![Actual BNK with six embedded audio entries](docs/images/06-audio-bank.png)
+![Bank export options](docs/images/07-export.png)
+
+<a id="beta"></a>
+## Replacement and rebuilding — Beta
+
+> [!WARNING]
+> **Experimental; not recommended for normal use. Game compatibility is not verified.** Hover or focus the in-app Beta label for the warning. Passing a local parser check does not prove a rebuilt package will run in the game.
+
+1. Select exactly one supported asset to reveal **Replace**.
+2. Supply a compatible original-format binary. Successful replacements are marked; replace more entries or replace the same one again.
+3. After at least one staged replacement, **Rebuild** becomes available.
+4. Choose a separate output directory. The rebuilt package includes replacements and all remaining original files; the source package is not overwritten.
+
+Current constraints: equal-length binary replacements only, within existing compressed slots; no general PNG/OBJ/MP3 import, arbitrary new assets or resized objects. Opaque objects and nested BNK media are not universally replaceable. Ordinary previews/exports show the original data until the rebuilt package is imported again.
+
+Changed blocks may use Zstd with skippable-frame padding. Unknown QTS checksum fields and `record.bytes` mappings are **not recomputed**. GUID-only external references are not fully resolved. Zero-change copying, untouched-byte preservation and reopened-entry checks are test baselines, not an in-game guarantee.
+
+<a id="structure"></a>
+## Project structure
+
+```text
+HOK-BetaStudio/
+├── backend/
+│   ├── Hok.Desktop/          # C# WPF + WebView2 host
+│   ├── Hok.Worker/           # parsing, preview, export
+│   ├── Hok.Catalog/          # remote index validation, staging and atomic sync
+│   ├── Hok.Contracts/        # filename identity and recursive scanner
+│   ├── Hok.Legacy/           # adapters to Studio-HoK readers
+│   ├── Hok.Rebuild/          # experimental replacement and rebuild
+│   └── *.Tests/             # executable regression suites
+├── frontend/                # React + TypeScript + Three.js
+├── vendor/Studio-HoK/        # upstream C# source and attribution
+├── assets/                  # UI assets, catalog and license notices
+├── docs/                    # documentation and real screenshots
+├── tooling/                 # build, packaging and verification scripts
+├── README.md
+├── README.zh.md
+└── README.vi.md
+```
+
+Dependency caches, native runtime packages, game DBs, exported assets and build products are excluded from source control. Since 1.3, the app uses a bundled URL index and remote portraits; static game portrait libraries are no longer required or packaged. Unknown IDs and failed image requests use local placeholders.
+
+<a id="build"></a>
+## Build and package
+
+Windows x64 is required for the desktop host. Install the .NET 10 SDK, Node.js with npm, and Microsoft Edge WebView2 Runtime. Installer packaging additionally needs NSIS. Versioned JavaScript dependencies are recorded in lockfiles.
+
+```powershell
+git clone https://github.com/Alanshown/HOK-BetaStudio.git
+cd HOK-BetaStudio
+npm ci --prefix frontend
+npm ci --prefix tooling
+dotnet build backend/Hok.Desktop/Hok.Desktop.csproj -c Release
+dotnet build backend/Hok.Worker/Hok.Worker.csproj -c Release
+dotnet run --project backend/Hok.Contracts.Tests -c Release -- .
+dotnet run --project backend/Hok.Catalog.Tests -c Release -- .
+```
+
+Source compilation and a complete desktop distribution are separate steps. See [build inputs](docs/BUILD.md) for native FBX/FMOD/codec helpers, media tools, artwork and the current packaging layout. Do not copy third-party binaries into the Git repository.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tooling/build-desktop.ps1 -OutputDirectory build/HOK-BetaStudio-1.4-win-x64
+powershell -ExecutionPolicy Bypass -File tooling/package-desktop.ps1 -BuildDirectory build/HOK-BetaStudio-1.4-win-x64
+```
+
+The separately maintained demonstration page is intentionally excluded from this repository. The images above are real desktop screenshots.
+
+For maintainers: [PowerShell guide to commits, branches, pushing and merging PRs (Chinese)](docs/GIT-PR-GUIDE.zh.md).
+
+<a id="download"></a>
+## Download and use
+
+Choose the Setup installer or portable ZIP from the [Release page](https://github.com/Alanshown/HOK-BetaStudio/releases), using the version actually listed there. A source-code update does not automatically publish binary attachments. GitHub’s automatic **Source code** downloads are not runnable applications. See [installation, SHA-256 verification and troubleshooting](docs/INSTALL.md).
+
+Extract the **whole portable ZIP** and run `HOK BetaStudio.exe`, or use the Windows installer. Do not move the EXE away from its `worker`, `ui` and `assets` folders. [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download) is required even with the self-contained .NET package; Setup does not install it automatically. Packages are not currently code-signed.
+
+Open a folder containing the complete main DB, shards and related files. Choose a hero, a skin and an asset. Use the preview or export selection actions. Keep original packages backed up, especially when trying Beta rebuilding.
+
+<a id="verification"></a>
+## Verification
+
+The screenshots are captured from the packaged desktop application using local `3200010500` and `3200010504` fixtures, not fabricated UI data. Fixtures and extracted audio/models are not published.
+
+| Check | Observed result |
+|---|---|
+| Mesh export (1.4) | 8 real meshes exported to OBJ and FBX and independently re-imported; matching geometry; both desktop samples passed consecutive exports |
+| Animated FBX (1.4) | 6 synthetic FBX fixtures re-imported; rig, root curves, override clips and sampled animation playback verified |
+| On-demand import / previews | 20 DBs tested sequentially; 704,337 visible rows, unchanged source hashes and zero explicit preview-media bytes materialized at import; [scope and limits](docs/LAZY-PREVIEW-VALIDATION.md) |
+| Resource index / desktop synchronization (1.3) | 41 index checks and 22 desktop checks; actual CDN images, silent detection, cache cleanup, three languages and domino refresh |
+| Identity and recursive scanner | 27 checks; 14 DB/shard files found through 12 nested levels |
+| Zero-change rebuild baseline | 16 checks across both packages; byte-identical baseline output |
+| Replacement worker | 15 checks, including repeat replacement and untouched-byte preservation |
+| Replacement desktop UI | 11 checks, including single-selection actions and localized Beta warnings |
+| BNK worker / desktop | 8 / 9 checks; six embedded media entries verified in the sample bank |
+
+These are scoped regression results, not a claim of support for every game version or codec. Some integration scripts require private fixture directories and locally generated reports. See [build inputs](docs/BUILD.md) before running them.
+
+<a id="attribution"></a>
+## Attribution and distribution
+
+Original HOK BetaStudio code is available under the [MIT license](LICENSE). Based on Studio-HoK / AssetStudio readers; preserve the [upstream MIT notice](vendor/Studio-HoK/LICENSE). This license does not relicense third-party code, binaries, game artwork or trademarks. See [license scope](docs/LICENSING.md), [asset notices](assets/licenses/SOURCES.txt) and [media notices](assets/licenses/media/NOTICE.txt).
+
+The HOK crest-plus-text app icon is a generated project concept, not an official game logo. Honor of Kings names, characters, artwork and trademarks belong to their respective owners; this is an independent project. Screenshots illustrate the tool and do not grant rights to redistribute the depicted game content.
+
+Only inspect and export material you are authorized to use. Publication does not establish distribution clearance: game-art permissions, native FBX/FMOD/codec redistribution checks and FFmpeg corresponding-source obligations remain unverified in the [release checklist](docs/RELEASE-CHECKLIST.md). No blanket license for those components is implied by this repository.
