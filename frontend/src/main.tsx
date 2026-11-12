@@ -2,7 +2,7 @@ import React,{lazy,Suspense,useEffect,useLayoutEffect,useMemo,useRef,useState} f
 import {createRoot} from 'react-dom/client';
 import {version as packageVersion} from '../package.json';
 const displayVersion=packageVersion.split('.').slice(0,2).join('.');
-import {boot,desktop,placeholder,rpc} from './bridge';
+import {boot,desktop,android,placeholder,rpc} from './bridge';
 import {locales} from './i18n';
 import type {Text} from './i18n';
 import type {Asset,Boot,Db,Lang,LoadResult,LoadSummary,Page} from './types';
@@ -78,7 +78,7 @@ function App(){
   if(importLock.current||clearing)return;importLock.current=true;setClearing(true);setMenu(false);++operation.current;resetView();setHasWorkspace(false);setDbs([]);setError('');setBusy(t.clearingWorkspace);
   try{const next=await rpc<AppliedCatalog>('catalogApply',{revision});setCatalog(current=>current?{...current,...next}:current);clearUpdate()}catch(e){setError(e instanceof Error?e.message:String(e))}finally{importLock.current=false;setClearing(false);setBusy('')}
  }
- async function open(mode:string){setMenu(false);if(!desktop){setError(t.onlyDesktop);return;}if(importLock.current)return;importLock.current=true;try{await run(t.loading,async()=>applyWorkspace(await rpc('open',{mode})))}finally{importLock.current=false}}
+ async function open(mode:string){setMenu(false);if(!desktop&&!android){setError(t.onlyDesktop);return;}if(importLock.current)return;importLock.current=true;try{await run(t.loading,async()=>applyWorkspace(await rpc('open',{mode})))}finally{importLock.current=false}}
  useEffect(()=>{
   const isFiles=(e:DragEvent)=>Array.from(e.dataTransfer?.types||[]).includes('Files');
   const reset=()=>{dragDepth.current=0;setDragState('idle')};

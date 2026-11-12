@@ -1,0 +1,7 @@
+.gradle/
+**/build/
+**/node_modules/
+frontend/dist/
+local.properties
+*.backup
+*.tsbuildinfo
