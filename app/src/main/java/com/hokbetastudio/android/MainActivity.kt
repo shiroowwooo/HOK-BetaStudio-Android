@@ -133,19 +133,8 @@ class MainActivity : Activity() {
                 putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            val myFilesIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                component = android.content.ComponentName(
-                    "com.sec.android.app.myfiles",
-                    "com.sec.android.app.myfiles.ui.PickerActivity"
-                )
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "*/*"
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
 
-            Intent.createChooser(fileIntent, "Choose HOK game files").apply {
-                putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(myFilesIntent))
-            }
+            Intent.createChooser(fileIntent, "Choose a file manager")
         }
 
         try {
