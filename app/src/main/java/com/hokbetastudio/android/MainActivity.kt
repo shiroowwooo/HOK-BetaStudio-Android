@@ -119,30 +119,93 @@ class MainActivity : Activity() {
             return
         }
 
+        if (mode != "folder") {
+            showFileAppChooser(id)
+            return
+        }
+
         pendingOpenId = id
-
-        val intent = if (mode == "folder") {
-            Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-            }
-        } else {
-            val fileIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "*/*"
-                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            Intent.createChooser(fileIntent, "Choose a file manager")
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         }
 
         try {
             startActivityForResult(intent, PICK_REQUEST)
         } catch (e: Exception) {
             pendingOpenId = null
-            sendError(id, "Cannot open Android file picker: ${e.message}")
+            sendError(id, "Cannot open folder picker: ${e.message}")
         }
+    }
+
+    private fun showFileAppChooser(id: String) {
+        val queries = listOf(
+            Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            },
+            Intent(Intent.ACTION_GET_CONTENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+        )
+
+        val discovered = linkedMapOf<String, Pair<String, Intent>>()
+
+        for (query in queries) {
+            val matches = packageManager.queryIntentActivities(
+                query,
+                android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
+            )
+
+            for (resolve in matches) {
+                val activity = resolve.activityInfo ?: continue
+                val key = "${activity.packageName}/${activity.name}"
+
+                if (discovered.containsKey(key)) continue
+
+                val launchIntent = Intent(query).apply {
+                    component = android.content.ComponentName(
+                        activity.packageName,
+                        activity.name
+                    )
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+
+                discovered[key] = Pair(
+                    resolve.loadLabel(packageManager).toString(),
+                    launchIntent
+                )
+            }
+        }
+
+        val apps = discovered.values.sortedBy { it.first.lowercase() }
+
+        if (apps.isEmpty()) {
+            sendError(id, "No compatible file-selection apps were found.")
+            return
+        }
+
+        pendingOpenId = id
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Choose an app")
+            .setItems(apps.map { it.first }.toTypedArray()) { _, index ->
+                try {
+                    startActivityForResult(apps[index].second, PICK_REQUEST)
+                } catch (e: Exception) {
+                    pendingOpenId = null
+                    sendError(id, "Cannot open selected app: ${e.message}")
+                }
+            }
+            .setOnCancelListener {
+                if (pendingOpenId == id) {
+                    pendingOpenId = null
+                    sendSuccess(id, null)
+                }
+            }
+            .show()
     }
 
     @Deprecated("Uses the compatible Activity result API")
